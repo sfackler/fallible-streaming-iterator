@@ -305,14 +305,23 @@ impl<I> FallibleStreamingIterator for Fuse<I>
     fn advance(&mut self) -> Result<(), I::Error> {
         match self.state {
             FuseState::Start => {
-                self.state = match self.it.next()? {
-                    Some(_) => FuseState::Middle,
-                    None => FuseState::End,
+                match self.it.next() {
+                    Ok(Some(_)) => self.state = FuseState::Middle,
+                    Ok(None) => self.state = FuseState::End,
+                    Err(e) => {
+                        self.state = FuseState::End;
+                        return Err(e)
+                    }
                 };
             }
             FuseState::Middle => {
-                if let None = self.it.next()? {
-                    self.state = FuseState::End;
+                match self.it.next() {
+                    Ok(Some(_)) => {}
+                    Ok(None) => self.state = FuseState::End,
+                    Err(e) => {
+                        self.state = FuseState::End;
+                        return Err(e)
+                    }
                 }
             }
             FuseState::End => {},
@@ -337,23 +346,31 @@ impl<I> FallibleStreamingIterator for Fuse<I>
     fn next(&mut self) -> Result<Option<&I::Item>, I::Error> {
         match self.state {
             FuseState::Start => {
-                match self.it.next()? {
-                    Some(v) => {
+                match self.it.next() {
+                    Ok(Some(v)) => {
                         self.state = FuseState::Middle;
                         Ok(Some(v))
                     }
-                    None => {
+                    Ok(None) => {
                         self.state = FuseState::End;
                         Ok(None)
+                    }
+                    Err(e) => {
+                        self.state = FuseState::End;
+                        Err(e)
                     }
                 }
             }
             FuseState::Middle => {
-                match self.it.next()? {
-                    Some(v) => Ok(Some(v)),
-                    None => {
+                match self.it.next() {
+                    Ok(Some(v)) => Ok(Some(v)),
+                    Ok(None) => {
                         self.state = FuseState::End;
                         Ok(None)
+                    }
+                    Err(e) => {
+                        self.state = FuseState::End;
+                        Err(e)
                     }
                 }
             }
