@@ -68,6 +68,16 @@ pub trait FallibleStreamingIterator {
             f: f,
         }
     }
+
+    #[inline]
+    fn fuse(self) -> Fuse<Self>
+        where Self: Sized
+    {
+        Fuse {
+            it: self,
+            state: FuseState::Start,
+        }
+    }
 }
 
 pub struct Filter<I, F> {
@@ -100,6 +110,85 @@ impl<I, F> FallibleStreamingIterator for Filter<I, F>
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, self.it.size_hint().1)
+    }
+}
+
+#[derive(Copy, Clone)]
+enum FuseState {
+    Start,
+    Middle,
+    End,
+}
+
+pub struct Fuse<I> {
+    it: I,
+    state: FuseState,
+}
+
+impl<I> FallibleStreamingIterator for Fuse<I>
+    where I: FallibleStreamingIterator
+{
+    type Item = I::Item;
+    type Error = I::Error;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), I::Error> {
+        match self.state {
+            FuseState::Start => {
+                self.state = match self.it.next()? {
+                    Some(_) => FuseState::Middle,
+                    None => FuseState::End,
+                };
+            }
+            FuseState::Middle => {
+                if let None = self.it.next()? {
+                    self.state = FuseState::End;
+                }
+            }
+            FuseState::End => {},
+        }
+        Ok(())
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+        match self.state {
+            FuseState::Middle => self.it.get(),
+            FuseState::Start | FuseState::End => None,
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.it.size_hint()
+    }
+
+    #[inline]
+    fn next(&mut self) -> Result<Option<&I::Item>, I::Error> {
+        match self.state {
+            FuseState::Start => {
+                match self.it.next()? {
+                    Some(v) => {
+                        self.state = FuseState::Middle;
+                        Ok(Some(v))
+                    }
+                    None => {
+                        self.state = FuseState::End;
+                        Ok(None)
+                    }
+                }
+            }
+            FuseState::Middle => {
+                match self.it.next()? {
+                    Some(v) => Ok(Some(v)),
+                    None => {
+                        self.state = FuseState::End;
+                        Ok(None)
+                    }
+                }
+            }
+            FuseState::End => Ok(None)
+        }
     }
 }
 
