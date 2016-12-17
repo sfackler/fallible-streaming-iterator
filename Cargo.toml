@@ -8,4 +8,7 @@ repository = "https://github.com/sfackler/fallible-streaming-iterator"
 documentation = "https://docs.rs/fallible-streaming-iterator/0.1.0/fallible_streaming_iterator"
 readme = "README.md"
 
+[features]
+std = []
+
 [dependencies]
