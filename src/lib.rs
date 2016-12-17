@@ -70,6 +70,25 @@ pub trait FallibleStreamingIterator {
     }
 
     #[inline]
+    fn find<F>(&mut self, mut f: F) -> Result<Option<&Self::Item>, Self::Error>
+        where Self: Sized,
+              F: FnMut(&Self::Item) -> bool
+    {
+        loop {
+            self.advance()?;
+            match self.get() {
+                Some(v) => {
+                    if f(v) {
+                        break;
+                    }
+                }
+                None => break,
+            }
+        }
+        Ok((*self).get())
+    }
+
+    #[inline]
     fn fuse(self) -> Fuse<Self>
         where Self: Sized
     {
