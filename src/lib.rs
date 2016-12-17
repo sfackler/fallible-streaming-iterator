@@ -101,6 +101,17 @@ pub trait FallibleStreamingIterator {
             f: f,
         }
     }
+
+    #[inline]
+    fn nth(&mut self, n: usize) -> Result<Option<&Self::Item>, Self::Error> {
+        for _ in 0..n {
+            self.advance()?;
+            if let None = self.get() {
+                return Ok(None);
+            }
+        }
+        self.next()
+    }
 }
 
 pub struct Filter<I, F> {
