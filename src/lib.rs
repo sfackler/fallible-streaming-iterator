@@ -57,6 +57,50 @@ pub trait FallibleStreamingIterator {
         }
         Ok(count)
     }
+
+    #[inline]
+    fn filter<F>(self, f: F) -> Filter<Self, F>
+        where Self: Sized,
+              F: FnMut(&Self::Item) -> bool
+    {
+        Filter {
+            it: self,
+            f: f,
+        }
+    }
+}
+
+pub struct Filter<I, F> {
+    it: I,
+    f: F,
+}
+
+impl<I, F> FallibleStreamingIterator for Filter<I, F>
+    where I: FallibleStreamingIterator,
+          F: FnMut(&I::Item) -> bool
+{
+    type Item = I::Item;
+    type Error = I::Error;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), I::Error> {
+        while let Some(i) = self.it.next()? {
+            if (self.f)(i) {
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+        self.it.get()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, self.it.size_hint().1)
+    }
 }
 
 #[cfg(test)]
