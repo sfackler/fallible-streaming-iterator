@@ -1,3 +1,4 @@
+#![doc(html_root_url="https://docs.rs/fallible-streaming-iterator/0.1.0")]
 #![no_std]
 
 pub trait FallibleStreamingIterator {
