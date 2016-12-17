@@ -179,6 +179,18 @@ pub trait FallibleStreamingIterator {
             done: false,
         }
     }
+
+    #[inline]
+    fn take_while<F>(self, f: F) -> TakeWhile<Self, F>
+        where Self: Sized,
+              F: FnMut(&Self::Item) -> bool
+    {
+        TakeWhile {
+            it: self,
+            f: f,
+            done: false,
+        }
+    }
 }
 
 pub struct Filter<I, F> {
@@ -461,6 +473,44 @@ impl<I> FallibleStreamingIterator for Take<I>
         } else {
             let hint = self.it.size_hint();
             (hint.0.saturating_sub(self.n), hint.1.map(|h| h.saturating_sub(self.n)))
+        }
+    }
+}
+
+pub struct TakeWhile<I, F> {
+    it: I,
+    f: F,
+    done: bool,
+}
+
+impl<I, F> FallibleStreamingIterator for TakeWhile<I, F>
+    where I: FallibleStreamingIterator,
+          F: FnMut(&I::Item) -> bool
+{
+    type Item = I::Item;
+    type Error = I::Error;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), I::Error> {
+        if let Some(v) = self.it.next()? {
+            if !(self.f)(v) {
+                self.done = true;
+            }
+        }
+        Ok(())
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+        if self.done { None } else { self.it.get() }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.done {
+            (0, Some(0))
+        } else {
+            (0, self.it.size_hint().1)
         }
     }
 }
