@@ -78,6 +78,18 @@ pub trait FallibleStreamingIterator {
             state: FuseState::Start,
         }
     }
+
+    #[inline]
+    fn map<F, B>(self, f: F) -> Map<Self, F, B>
+        where Self: Sized,
+              F: FnMut(&Self::Item) -> B
+    {
+        Map {
+            it: self,
+            f: f,
+            value: None,
+        }
+    }
 }
 
 pub struct Filter<I, F> {
@@ -189,6 +201,37 @@ impl<I> FallibleStreamingIterator for Fuse<I>
             }
             FuseState::End => Ok(None)
         }
+    }
+}
+
+pub struct Map<I, F, B>
+{
+    it: I,
+    f: F,
+    value: Option<B>,
+}
+
+impl<I, F, B> FallibleStreamingIterator for Map<I, F, B>
+    where I: FallibleStreamingIterator,
+          F: FnMut(&I::Item) -> B
+{
+    type Item = B;
+    type Error = I::Error;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), I::Error> {
+        self.value = self.it.next()?.map(&mut self.f);
+        Ok(())
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&B> {
+        self.value.as_ref()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.it.size_hint()
     }
 }
 
