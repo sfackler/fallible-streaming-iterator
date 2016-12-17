@@ -14,3 +14,10 @@ pub trait FallibleStreamingIterator {
         Ok(self.get())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn _is_object_safe(_: &FallibleStreamingIterator<Item = (), Error = ()>) {}
+}
