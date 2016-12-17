@@ -146,6 +146,16 @@ pub trait FallibleStreamingIterator {
         }
         Ok(None)
     }
+
+    #[inline]
+    fn skip(self, n: usize) -> Skip<Self>
+        where Self: Sized
+    {
+        Skip {
+            it: self,
+            n: n,
+        }
+    }
 }
 
 pub struct Filter<I, F> {
@@ -316,6 +326,40 @@ impl<I, F, B: ?Sized> FallibleStreamingIterator for MapRef<I, F>
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.it.size_hint()
+    }
+}
+
+pub struct Skip<I> {
+    it: I,
+    n: usize,
+}
+
+impl<I> FallibleStreamingIterator for Skip<I>
+    where I: FallibleStreamingIterator
+{
+    type Item = I::Item;
+    type Error = I::Error;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), I::Error> {
+        for _ in 0..self.n {
+            if let None = self.it.next()? {
+                return Ok(());
+            }
+        }
+        self.n = 0;
+        self.advance()
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+        self.it.get()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let hint = self.it.size_hint();
+        (hint.0.saturating_sub(self.n), hint.1.map(|h| h.saturating_sub(self.n)))
     }
 }
 
