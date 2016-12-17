@@ -90,6 +90,17 @@ pub trait FallibleStreamingIterator {
             value: None,
         }
     }
+
+    #[inline]
+    fn map_ref<F, B: ?Sized>(self, f: F) -> MapRef<Self, F>
+        where Self: Sized,
+              F: Fn(&Self::Item) -> &B
+    {
+        MapRef {
+            it: self,
+            f: f,
+        }
+    }
 }
 
 pub struct Filter<I, F> {
@@ -227,6 +238,34 @@ impl<I, F, B> FallibleStreamingIterator for Map<I, F, B>
     #[inline]
     fn get(&self) -> Option<&B> {
         self.value.as_ref()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.it.size_hint()
+    }
+}
+
+pub struct MapRef<I, F> {
+    it: I,
+    f: F,
+}
+
+impl<I, F, B: ?Sized> FallibleStreamingIterator for MapRef<I, F>
+    where I: FallibleStreamingIterator,
+          F: Fn(&I::Item) -> &B,
+{
+    type Item = B;
+    type Error = I::Error;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), I::Error> {
+        self.it.advance()
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&B> {
+        self.it.get().map(&self.f)
     }
 
     #[inline]
