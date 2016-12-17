@@ -131,6 +131,21 @@ pub trait FallibleStreamingIterator {
         }
         self.next()
     }
+
+    #[inline]
+    fn position<F>(&mut self, mut f: F) -> Result<Option<usize>, Self::Error>
+        where Self: Sized,
+              F: FnMut(&Self::Item) -> bool
+    {
+        let mut pos = 0;
+        while let Some(v) = self.next()? {
+            if f(v) {
+                return Ok(Some(pos));
+            }
+            pos += 1;
+        }
+        Ok(None)
+    }
 }
 
 pub struct Filter<I, F> {
