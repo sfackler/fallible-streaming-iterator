@@ -1,25 +1,59 @@
+//! Fallible, streaming iteration.
+//!
+//! `FallibleStreamingIterator` differs from the standard library's `Iterator` trait in two ways:
+//! iteration can fail, resulting in an error, and only one element of the iteration is available at
+//! any time.
+//!
+//! While these iterators cannot be used with Rust `for` loops, `while let` loops offer a similar
+//! level of ergonomics:
+//!
+//! ```ignore
+//! while let Some(value) = it.next()? {
+//!     // use value
+//! }
+//! ```
 #![doc(html_root_url="https://docs.rs/fallible-streaming-iterator/0.1.0")]
+#![warn(missing_docs)]
 #![no_std]
 
+/// A fallible, streaming iterator.
 pub trait FallibleStreamingIterator {
+    /// The type being iterated over.
     type Item: ?Sized;
+
+    /// The error type of iteration.
     type Error;
 
+    /// Advances the iterator to the next position.
+    ///
+    /// Iterators start just before the first item, so this method should be called before `get`
+    /// when iterating.
+    ///
+    /// The behavior of calling this method after `get` has returned `None`, or after this method
+    /// has returned an error is unspecified.
     fn advance(&mut self) -> Result<(), Self::Error>;
 
+    /// Returns the current element.
+    ///
+    /// The behavior of calling this method before any calls to `advance` is unspecified.
     fn get(&self) -> Option<&Self::Item>;
 
+    /// Advances the iterator, returning the next element.
+    ///
+    /// The default implementation simply calls `advance` followed by `get`.
     #[inline]
     fn next(&mut self) -> Result<Option<&Self::Item>, Self::Error> {
         self.advance()?;
         Ok(self.get())
     }
 
+    /// Returns bounds on the number of remaining elements in the iterator.
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, None)
     }
 
+    /// Determines if all elements of the iterator satisfy a predicate.
     #[inline]
     fn all<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
         where Self: Sized,
@@ -33,6 +67,7 @@ pub trait FallibleStreamingIterator {
         Ok(true)
     }
 
+    /// Determines if any elements of the iterator satisfy a predicate.
     #[inline]
     fn any<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
         where Self: Sized,
@@ -41,6 +76,10 @@ pub trait FallibleStreamingIterator {
         self.all(|e| !f(e)).map(|r| !r)
     }
 
+    /// Borrows an iterator, rather than consuming it.
+    ///
+    /// This is useful to allow the application of iterator adaptors while still retaining ownership
+    /// of the original adaptor.
     #[inline]
     fn by_ref(&mut self) -> &mut Self
         where Self: Sized
@@ -48,6 +87,7 @@ pub trait FallibleStreamingIterator {
         self
     }
 
+    /// Returns the number of remaining elements in the iterator.
     #[inline]
     fn count(mut self) -> Result<usize, Self::Error>
         where Self: Sized
@@ -59,6 +99,7 @@ pub trait FallibleStreamingIterator {
         Ok(count)
     }
 
+    /// Returns an iterator which filters elements by a predicate.
     #[inline]
     fn filter<F>(self, f: F) -> Filter<Self, F>
         where Self: Sized,
@@ -70,6 +111,7 @@ pub trait FallibleStreamingIterator {
         }
     }
 
+    /// Returns the first element of the iterator which satisfies a predicate.
     #[inline]
     fn find<F>(&mut self, mut f: F) -> Result<Option<&Self::Item>, Self::Error>
         where Self: Sized,
@@ -89,6 +131,7 @@ pub trait FallibleStreamingIterator {
         Ok((*self).get())
     }
 
+    /// Returns an iterator which is well-behaved at the beginning and end of iteration.
     #[inline]
     fn fuse(self) -> Fuse<Self>
         where Self: Sized
@@ -99,6 +142,7 @@ pub trait FallibleStreamingIterator {
         }
     }
 
+    /// Returns an iterator which applies a transform to elements.
     #[inline]
     fn map<F, B>(self, f: F) -> Map<Self, F, B>
         where Self: Sized,
@@ -111,6 +155,10 @@ pub trait FallibleStreamingIterator {
         }
     }
 
+    /// Returns an iterator which applies a transform to elements.
+    ///
+    /// Unlike `map`, the the closure provided to this method returns a reference into the original
+    /// value.
     #[inline]
     fn map_ref<F, B: ?Sized>(self, f: F) -> MapRef<Self, F>
         where Self: Sized,
@@ -122,6 +170,7 @@ pub trait FallibleStreamingIterator {
         }
     }
 
+    /// Returns the `nth` element of the iterator.
     #[inline]
     fn nth(&mut self, n: usize) -> Result<Option<&Self::Item>, Self::Error> {
         for _ in 0..n {
@@ -133,6 +182,7 @@ pub trait FallibleStreamingIterator {
         self.next()
     }
 
+    /// Returns the position of the first element matching a predicate.
     #[inline]
     fn position<F>(&mut self, mut f: F) -> Result<Option<usize>, Self::Error>
         where Self: Sized,
@@ -148,6 +198,7 @@ pub trait FallibleStreamingIterator {
         Ok(None)
     }
 
+    /// Returns an iterator which skips the first `n` elements.
     #[inline]
     fn skip(self, n: usize) -> Skip<Self>
         where Self: Sized
@@ -158,6 +209,7 @@ pub trait FallibleStreamingIterator {
         }
     }
 
+    /// Returns an iterator which skips the first sequence of elements matching a predicate.
     #[inline]
     fn skip_while<F>(self, f: F) -> SkipWhile<Self, F>
         where Self: Sized,
@@ -170,6 +222,7 @@ pub trait FallibleStreamingIterator {
         }
     }
 
+    /// Returns an iterator which only returns the first `n` elements.
     #[inline]
     fn take(self, n: usize) -> Take<Self>
         where Self: Sized
@@ -181,6 +234,7 @@ pub trait FallibleStreamingIterator {
         }
     }
 
+    /// Returns an iterator which only returns the first sequence of elements matching a predicate.
     #[inline]
     fn take_while<F>(self, f: F) -> TakeWhile<Self, F>
         where Self: Sized,
@@ -194,6 +248,7 @@ pub trait FallibleStreamingIterator {
     }
 }
 
+/// An iterator which filters elements with a predicate.
 pub struct Filter<I, F> {
     it: I,
     f: F,
@@ -234,6 +289,7 @@ enum FuseState {
     End,
 }
 
+/// An iterator which is well-behaved at the beginning and end of iteration.
 pub struct Fuse<I> {
     it: I,
     state: FuseState,
@@ -306,6 +362,7 @@ impl<I> FallibleStreamingIterator for Fuse<I>
     }
 }
 
+/// An iterator which applies a transform to elements.
 pub struct Map<I, F, B>
 {
     it: I,
@@ -337,6 +394,7 @@ impl<I, F, B> FallibleStreamingIterator for Map<I, F, B>
     }
 }
 
+/// An iterator which applies a transform to elements.
 pub struct MapRef<I, F> {
     it: I,
     f: F,
@@ -365,6 +423,7 @@ impl<I, F, B: ?Sized> FallibleStreamingIterator for MapRef<I, F>
     }
 }
 
+/// Returns an iterator which skips a number of initial elements.
 pub struct Skip<I> {
     it: I,
     n: usize,
@@ -399,6 +458,7 @@ impl<I> FallibleStreamingIterator for Skip<I>
     }
 }
 
+/// An iterator which skips initial elements matching a predicate.
 pub struct SkipWhile<I, F> {
     it: I,
     f: F,
@@ -439,6 +499,7 @@ impl<I, F> FallibleStreamingIterator for SkipWhile<I, F>
     }
 }
 
+/// An iterator which only returns a number of initial elements.
 pub struct Take<I> {
     it: I,
     n: usize,
@@ -478,6 +539,7 @@ impl<I> FallibleStreamingIterator for Take<I>
     }
 }
 
+/// An iterator which only returns initial elements matching a predicate.
 pub struct TakeWhile<I, F> {
     it: I,
     f: F,
