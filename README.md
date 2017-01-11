@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/sfackler/fallible-streaming-iterator?branch=master)](https://travis-ci.org/sfackler/fallible-streaming-iterator)
 
-[Documentation](https://docs.rs/fallible-streaming-iterator/0.1.1/fallible_streaming_iterator)
+[Documentation](https://docs.rs/fallible-streaming-iterator)
 
 Fallible, streaming iteration
 
