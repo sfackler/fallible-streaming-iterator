@@ -170,6 +170,18 @@ pub trait FallibleStreamingIterator {
         }
     }
 
+    /// Returns an iterator that applies a transform to errors.
+    #[inline]
+    fn map_err<F, B>(self, f: F) -> MapErr<Self, F>
+        where Self: Sized,
+              F: Fn(Self::Error) -> B
+    {
+        MapErr {
+            it: self,
+            f: f,
+        }
+    }
+
     /// Returns the `nth` element of the iterator.
     #[inline]
     fn nth(&mut self, n: usize) -> Result<Option<&Self::Item>, Self::Error> {
@@ -495,7 +507,41 @@ impl<I, F, B: ?Sized> FallibleStreamingIterator for MapRef<I, F>
     }
 }
 
-/// Returns an iterator which skips a number of initial elements.
+/// An iterator which applies a transform to errors.
+pub struct MapErr<I, F> {
+    it: I,
+    f: F,
+}
+
+impl<I, F, B> FallibleStreamingIterator for MapErr<I, F>
+    where I: FallibleStreamingIterator,
+          F: Fn(I::Error) -> B
+{
+    type Item = I::Item;
+    type Error = B;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), B> {
+        self.it.advance().map_err(&mut self.f)
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+        self.it.get()
+    }
+
+    #[inline]
+    fn next(&mut self) -> Result<Option<&I::Item>, B> {
+        self.it.next().map_err(&mut self.f)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.it.size_hint()
+    }
+}
+
+/// An iterator which skips a number of initial elements.
 pub struct Skip<I> {
     it: I,
     n: usize,
