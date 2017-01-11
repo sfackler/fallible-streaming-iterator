@@ -643,7 +643,7 @@ impl<I> FallibleStreamingIterator for Take<I>
 
     #[inline]
     fn get(&self) -> Option<&I::Item> {
-        if self.done { self.it.get() } else { None }
+        if self.done { None } else { self.it.get() }
     }
 
     #[inline]
