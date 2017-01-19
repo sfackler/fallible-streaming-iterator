@@ -315,6 +315,50 @@ impl<I: ?Sized> FallibleStreamingIterator for Box<I>
     }
 }
 
+/// Converts a normal `Iterator` over `Results` of references into a
+/// `FallibleStreamingIterator`.
+pub fn convert<'a, I, T, E>(it: I) -> Convert<'a, I, T>
+    where I: Iterator<Item = Result<&'a T, E>>
+{
+    Convert {
+        it: it,
+        item: None,
+    }
+}
+
+/// An iterator which wraps a normal `Iterator`.
+pub struct Convert<'a, I, T: 'a> {
+    it: I,
+    item: Option<&'a T>,
+}
+
+impl<'a, I, T, E> FallibleStreamingIterator for Convert<'a, I, T>
+    where I: Iterator<Item = Result<&'a T, E>>
+{
+    type Item = T;
+    type Error = E;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), E> {
+        self.item = match self.it.next() {
+            Some(Ok(v)) => Some(v),
+            Some(Err(e)) => return Err(e),
+            None => None,
+        };
+        Ok(())
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&T> {
+        self.item
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.it.size_hint()
+    }
+}
+
 /// An iterator which filters elements with a predicate.
 pub struct Filter<I, F> {
     it: I,
