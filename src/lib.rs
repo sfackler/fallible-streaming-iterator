@@ -16,6 +16,11 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "std")]
+extern crate core;
+
+use core::marker::PhantomData;
+
 /// A fallible, streaming iterator.
 pub trait FallibleStreamingIterator {
     /// The type being iterated over.
@@ -356,6 +361,34 @@ impl<'a, I, T, E> FallibleStreamingIterator for Convert<'a, I, T>
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.it.size_hint()
+    }
+}
+
+/// Returns an iterator over no items.
+pub fn empty<T, E>() -> Empty<T, E> {
+    Empty(PhantomData)
+}
+
+/// An iterator over no items.
+pub struct Empty<T, E>(PhantomData<(T, E)>);
+
+impl<T, E> FallibleStreamingIterator for Empty<T, E> {
+    type Item = T;
+    type Error = E;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), E> {
+        Ok(())
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&T> {
+        None
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(0))
     }
 }
 
