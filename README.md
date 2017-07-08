@@ -1,6 +1,5 @@
 # fallible-streaming-iterator
-
-[![Build Status](https://travis-ci.org/sfackler/fallible-streaming-iterator.svg?branch=master)](https://travis-ci.org/sfackler/fallible-streaming-iterator)
+[![CircleCI](https://circleci.com/gh/sfackler/fallible-streaming-iterator.svg?style=shield)](https://circleci.com/gh/sfackler/fallible-streaming-iterator)
 
 [Documentation](https://docs.rs/fallible-streaming-iterator)
 
