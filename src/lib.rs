@@ -12,7 +12,7 @@
 //!     // use value
 //! }
 //! ```
-#![doc(html_root_url = "https://docs.rs/fallible-streaming-iterator/0.1.5")]
+#![doc(html_root_url = "https://docs.rs/fallible-streaming-iterator/0.1")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 

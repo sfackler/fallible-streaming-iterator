@@ -5,7 +5,6 @@ authors = ["Steven Fackler <sfackler@gmail.com>"]
 description = "Fallible streaming iteration"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/sfackler/fallible-streaming-iterator"
-documentation = "https://docs.rs/fallible-streaming-iterator/0.1.5/fallible_streaming_iterator"
 readme = "README.md"
 
 [features]
