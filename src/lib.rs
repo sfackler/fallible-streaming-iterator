@@ -282,6 +282,7 @@ pub trait DoubleEndedFallibleStreamingIterator: FallibleStreamingIterator {
     /// Advances the back of the iterator, returning the last element.
     ///
     /// The default implementation simply calls `advance_back` followed by `get`.
+    #[inline]
     fn next_back(&mut self) -> Result<Option<&Self::Item>, Self::Error> {
         self.advance_back()?;
         Ok((*self).get())
