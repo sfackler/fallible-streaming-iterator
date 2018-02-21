@@ -12,7 +12,7 @@
 //!     // use value
 //! }
 //! ```
-#![doc(html_root_url="https://docs.rs/fallible-streaming-iterator/0.1.5")]
+#![doc(html_root_url = "https://docs.rs/fallible-streaming-iterator/0.1.5")]
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -61,8 +61,9 @@ pub trait FallibleStreamingIterator {
     /// Determines if all elements of the iterator satisfy a predicate.
     #[inline]
     fn all<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
-        where Self: Sized,
-              F: FnMut(&Self::Item) -> bool
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> bool,
     {
         while let Some(e) = self.next()? {
             if !f(e) {
@@ -75,8 +76,9 @@ pub trait FallibleStreamingIterator {
     /// Determines if any elements of the iterator satisfy a predicate.
     #[inline]
     fn any<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
-        where Self: Sized,
-              F: FnMut(&Self::Item) -> bool
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> bool,
     {
         self.all(|e| !f(e)).map(|r| !r)
     }
@@ -87,7 +89,8 @@ pub trait FallibleStreamingIterator {
     /// of the original adaptor.
     #[inline]
     fn by_ref(&mut self) -> &mut Self
-        where Self: Sized
+    where
+        Self: Sized,
     {
         self
     }
@@ -95,7 +98,8 @@ pub trait FallibleStreamingIterator {
     /// Returns the number of remaining elements in the iterator.
     #[inline]
     fn count(mut self) -> Result<usize, Self::Error>
-        where Self: Sized
+    where
+        Self: Sized,
     {
         let mut count = 0;
         while let Some(_) = self.next()? {
@@ -107,20 +111,19 @@ pub trait FallibleStreamingIterator {
     /// Returns an iterator which filters elements by a predicate.
     #[inline]
     fn filter<F>(self, f: F) -> Filter<Self, F>
-        where Self: Sized,
-              F: FnMut(&Self::Item) -> bool
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> bool,
     {
-        Filter {
-            it: self,
-            f: f,
-        }
+        Filter { it: self, f: f }
     }
 
     /// Returns the first element of the iterator which satisfies a predicate.
     #[inline]
     fn find<F>(&mut self, mut f: F) -> Result<Option<&Self::Item>, Self::Error>
-        where Self: Sized,
-              F: FnMut(&Self::Item) -> bool
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> bool,
     {
         loop {
             self.advance()?;
@@ -139,7 +142,8 @@ pub trait FallibleStreamingIterator {
     /// Returns an iterator which is well-behaved at the beginning and end of iteration.
     #[inline]
     fn fuse(self) -> Fuse<Self>
-        where Self: Sized
+    where
+        Self: Sized,
     {
         Fuse {
             it: self,
@@ -150,8 +154,9 @@ pub trait FallibleStreamingIterator {
     /// Returns an iterator which applies a transform to elements.
     #[inline]
     fn map<F, B>(self, f: F) -> Map<Self, F, B>
-        where Self: Sized,
-              F: FnMut(&Self::Item) -> B
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> B,
     {
         Map {
             it: self,
@@ -166,25 +171,21 @@ pub trait FallibleStreamingIterator {
     /// value.
     #[inline]
     fn map_ref<F, B: ?Sized>(self, f: F) -> MapRef<Self, F>
-        where Self: Sized,
-              F: Fn(&Self::Item) -> &B
+    where
+        Self: Sized,
+        F: Fn(&Self::Item) -> &B,
     {
-        MapRef {
-            it: self,
-            f: f,
-        }
+        MapRef { it: self, f: f }
     }
 
     /// Returns an iterator that applies a transform to errors.
     #[inline]
     fn map_err<F, B>(self, f: F) -> MapErr<Self, F>
-        where Self: Sized,
-              F: Fn(Self::Error) -> B
+    where
+        Self: Sized,
+        F: Fn(Self::Error) -> B,
     {
-        MapErr {
-            it: self,
-            f: f,
-        }
+        MapErr { it: self, f: f }
     }
 
     /// Returns the `nth` element of the iterator.
@@ -202,8 +203,9 @@ pub trait FallibleStreamingIterator {
     /// Returns the position of the first element matching a predicate.
     #[inline]
     fn position<F>(&mut self, mut f: F) -> Result<Option<usize>, Self::Error>
-        where Self: Sized,
-              F: FnMut(&Self::Item) -> bool
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> bool,
     {
         let mut pos = 0;
         while let Some(v) = self.next()? {
@@ -218,19 +220,18 @@ pub trait FallibleStreamingIterator {
     /// Returns an iterator which skips the first `n` elements.
     #[inline]
     fn skip(self, n: usize) -> Skip<Self>
-        where Self: Sized
+    where
+        Self: Sized,
     {
-        Skip {
-            it: self,
-            n: n,
-        }
+        Skip { it: self, n: n }
     }
 
     /// Returns an iterator which skips the first sequence of elements matching a predicate.
     #[inline]
     fn skip_while<F>(self, f: F) -> SkipWhile<Self, F>
-        where Self: Sized,
-              F: FnMut(&Self::Item) -> bool
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> bool,
     {
         SkipWhile {
             it: self,
@@ -242,7 +243,8 @@ pub trait FallibleStreamingIterator {
     /// Returns an iterator which only returns the first `n` elements.
     #[inline]
     fn take(self, n: usize) -> Take<Self>
-        where Self: Sized
+    where
+        Self: Sized,
     {
         Take {
             it: self,
@@ -254,8 +256,9 @@ pub trait FallibleStreamingIterator {
     /// Returns an iterator which only returns the first sequence of elements matching a predicate.
     #[inline]
     fn take_while<F>(self, f: F) -> TakeWhile<Self, F>
-        where Self: Sized,
-              F: FnMut(&Self::Item) -> bool
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> bool,
     {
         TakeWhile {
             it: self,
@@ -265,8 +268,29 @@ pub trait FallibleStreamingIterator {
     }
 }
 
+/// A fallible, streaming iterator which can be advanced from either end.
+pub trait DoubleEndedFallibleStreamingIterator: FallibleStreamingIterator {
+    /// Advances the state of the iterator to the next item from the end.
+    ///
+    /// Iterators start just after the last item, so this method should be called before `get`
+    /// when iterating.
+    ///
+    /// The behavior of calling this method after `get` has returned `None`, or after this method
+    /// or `advance` has returned an error is unspecified.
+    fn advance_back(&mut self) -> Result<(), Self::Error>;
+
+    /// Advances the back of the iterator, returning the last element.
+    ///
+    /// The default implementation simply calls `advance_back` followed by `get`.
+    fn next_back(&mut self) -> Result<Option<&Self::Item>, Self::Error> {
+        self.advance_back()?;
+        Ok((*self).get())
+    }
+}
+
 impl<'a, I: ?Sized> FallibleStreamingIterator for &'a mut I
-    where I: FallibleStreamingIterator
+where
+    I: FallibleStreamingIterator,
 {
     type Item = I::Item;
     type Error = I::Error;
@@ -294,7 +318,8 @@ impl<'a, I: ?Sized> FallibleStreamingIterator for &'a mut I
 
 #[cfg(feature = "std")]
 impl<I: ?Sized> FallibleStreamingIterator for Box<I>
-    where I: FallibleStreamingIterator
+where
+    I: FallibleStreamingIterator,
 {
     type Item = I::Item;
     type Error = I::Error;
@@ -323,12 +348,10 @@ impl<I: ?Sized> FallibleStreamingIterator for Box<I>
 /// Converts a normal `Iterator` over `Results` of references into a
 /// `FallibleStreamingIterator`.
 pub fn convert<'a, I, T, E>(it: I) -> Convert<'a, I, T>
-    where I: Iterator<Item = Result<&'a T, E>>
+where
+    I: Iterator<Item = Result<&'a T, E>>,
 {
-    Convert {
-        it: it,
-        item: None,
-    }
+    Convert { it: it, item: None }
 }
 
 /// An iterator which wraps a normal `Iterator`.
@@ -338,7 +361,8 @@ pub struct Convert<'a, I, T: 'a> {
 }
 
 impl<'a, I, T, E> FallibleStreamingIterator for Convert<'a, I, T>
-    where I: Iterator<Item = Result<&'a T, E>>
+where
+    I: Iterator<Item = Result<&'a T, E>>,
 {
     type Item = T;
     type Error = E;
@@ -361,6 +385,21 @@ impl<'a, I, T, E> FallibleStreamingIterator for Convert<'a, I, T>
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.it.size_hint()
+    }
+}
+
+impl<'a, I, T, E> DoubleEndedFallibleStreamingIterator for Convert<'a, I, T>
+where
+    I: DoubleEndedIterator<Item = Result<&'a T, E>>,
+{
+    #[inline]
+    fn advance_back(&mut self) -> Result<(), E> {
+        self.item = match self.it.next_back() {
+            Some(Ok(v)) => Some(v),
+            Some(Err(e)) => return Err(e),
+            None => None,
+        };
+        Ok(())
     }
 }
 
@@ -392,6 +431,13 @@ impl<T, E> FallibleStreamingIterator for Empty<T, E> {
     }
 }
 
+impl<T, E> DoubleEndedFallibleStreamingIterator for Empty<T, E> {
+    #[inline]
+    fn advance_back(&mut self) -> Result<(), E> {
+        Ok(())
+    }
+}
+
 /// An iterator which filters elements with a predicate.
 pub struct Filter<I, F> {
     it: I,
@@ -399,8 +445,9 @@ pub struct Filter<I, F> {
 }
 
 impl<I, F> FallibleStreamingIterator for Filter<I, F>
-    where I: FallibleStreamingIterator,
-          F: FnMut(&I::Item) -> bool
+where
+    I: FallibleStreamingIterator,
+    F: FnMut(&I::Item) -> bool,
 {
     type Item = I::Item;
     type Error = I::Error;
@@ -440,7 +487,8 @@ pub struct Fuse<I> {
 }
 
 impl<I> FallibleStreamingIterator for Fuse<I>
-    where I: FallibleStreamingIterator
+where
+    I: FallibleStreamingIterator,
 {
     type Item = I::Item;
     type Error = I::Error;
@@ -454,21 +502,19 @@ impl<I> FallibleStreamingIterator for Fuse<I>
                     Ok(None) => self.state = FuseState::End,
                     Err(e) => {
                         self.state = FuseState::End;
-                        return Err(e)
+                        return Err(e);
                     }
                 };
             }
-            FuseState::Middle => {
-                match self.it.next() {
-                    Ok(Some(_)) => {}
-                    Ok(None) => self.state = FuseState::End,
-                    Err(e) => {
-                        self.state = FuseState::End;
-                        return Err(e)
-                    }
+            FuseState::Middle => match self.it.next() {
+                Ok(Some(_)) => {}
+                Ok(None) => self.state = FuseState::End,
+                Err(e) => {
+                    self.state = FuseState::End;
+                    return Err(e);
                 }
-            }
-            FuseState::End => {},
+            },
+            FuseState::End => {}
         }
         Ok(())
     }
@@ -489,51 +535,47 @@ impl<I> FallibleStreamingIterator for Fuse<I>
     #[inline]
     fn next(&mut self) -> Result<Option<&I::Item>, I::Error> {
         match self.state {
-            FuseState::Start => {
-                match self.it.next() {
-                    Ok(Some(v)) => {
-                        self.state = FuseState::Middle;
-                        Ok(Some(v))
-                    }
-                    Ok(None) => {
-                        self.state = FuseState::End;
-                        Ok(None)
-                    }
-                    Err(e) => {
-                        self.state = FuseState::End;
-                        Err(e)
-                    }
+            FuseState::Start => match self.it.next() {
+                Ok(Some(v)) => {
+                    self.state = FuseState::Middle;
+                    Ok(Some(v))
                 }
-            }
-            FuseState::Middle => {
-                match self.it.next() {
-                    Ok(Some(v)) => Ok(Some(v)),
-                    Ok(None) => {
-                        self.state = FuseState::End;
-                        Ok(None)
-                    }
-                    Err(e) => {
-                        self.state = FuseState::End;
-                        Err(e)
-                    }
+                Ok(None) => {
+                    self.state = FuseState::End;
+                    Ok(None)
                 }
-            }
-            FuseState::End => Ok(None)
+                Err(e) => {
+                    self.state = FuseState::End;
+                    Err(e)
+                }
+            },
+            FuseState::Middle => match self.it.next() {
+                Ok(Some(v)) => Ok(Some(v)),
+                Ok(None) => {
+                    self.state = FuseState::End;
+                    Ok(None)
+                }
+                Err(e) => {
+                    self.state = FuseState::End;
+                    Err(e)
+                }
+            },
+            FuseState::End => Ok(None),
         }
     }
 }
 
 /// An iterator which applies a transform to elements.
-pub struct Map<I, F, B>
-{
+pub struct Map<I, F, B> {
     it: I,
     f: F,
     value: Option<B>,
 }
 
 impl<I, F, B> FallibleStreamingIterator for Map<I, F, B>
-    where I: FallibleStreamingIterator,
-          F: FnMut(&I::Item) -> B
+where
+    I: FallibleStreamingIterator,
+    F: FnMut(&I::Item) -> B,
 {
     type Item = B;
     type Error = I::Error;
@@ -555,6 +597,18 @@ impl<I, F, B> FallibleStreamingIterator for Map<I, F, B>
     }
 }
 
+impl<I, F, B> DoubleEndedFallibleStreamingIterator for Map<I, F, B>
+where
+    I: DoubleEndedFallibleStreamingIterator,
+    F: FnMut(&I::Item) -> B,
+{
+    #[inline]
+    fn advance_back(&mut self) -> Result<(), I::Error> {
+        self.value = self.it.next_back()?.map(&mut self.f);
+        Ok(())
+    }
+}
+
 /// An iterator which applies a transform to elements.
 pub struct MapRef<I, F> {
     it: I,
@@ -562,8 +616,9 @@ pub struct MapRef<I, F> {
 }
 
 impl<I, F, B: ?Sized> FallibleStreamingIterator for MapRef<I, F>
-    where I: FallibleStreamingIterator,
-          F: Fn(&I::Item) -> &B,
+where
+    I: FallibleStreamingIterator,
+    F: Fn(&I::Item) -> &B,
 {
     type Item = B;
     type Error = I::Error;
@@ -584,6 +639,17 @@ impl<I, F, B: ?Sized> FallibleStreamingIterator for MapRef<I, F>
     }
 }
 
+impl<I, F, B: ?Sized> DoubleEndedFallibleStreamingIterator for MapRef<I, F>
+where
+    I: DoubleEndedFallibleStreamingIterator,
+    F: Fn(&I::Item) -> &B,
+{
+    #[inline]
+    fn advance_back(&mut self) -> Result<(), I::Error> {
+        self.it.advance_back()
+    }
+}
+
 /// An iterator which applies a transform to errors.
 pub struct MapErr<I, F> {
     it: I,
@@ -591,8 +657,9 @@ pub struct MapErr<I, F> {
 }
 
 impl<I, F, B> FallibleStreamingIterator for MapErr<I, F>
-    where I: FallibleStreamingIterator,
-          F: Fn(I::Error) -> B
+where
+    I: FallibleStreamingIterator,
+    F: Fn(I::Error) -> B,
 {
     type Item = I::Item;
     type Error = B;
@@ -618,6 +685,22 @@ impl<I, F, B> FallibleStreamingIterator for MapErr<I, F>
     }
 }
 
+impl<I, F, B> DoubleEndedFallibleStreamingIterator for MapErr<I, F>
+where
+    I: DoubleEndedFallibleStreamingIterator,
+    F: Fn(I::Error) -> B,
+{
+    #[inline]
+    fn advance_back(&mut self) -> Result<(), B> {
+        self.it.advance_back().map_err(&mut self.f)
+    }
+
+    #[inline]
+    fn next_back(&mut self) -> Result<Option<&I::Item>, B> {
+        self.it.next_back().map_err(&mut self.f)
+    }
+}
+
 /// An iterator which skips a number of initial elements.
 pub struct Skip<I> {
     it: I,
@@ -625,7 +708,8 @@ pub struct Skip<I> {
 }
 
 impl<I> FallibleStreamingIterator for Skip<I>
-    where I: FallibleStreamingIterator
+where
+    I: FallibleStreamingIterator,
 {
     type Item = I::Item;
     type Error = I::Error;
@@ -649,7 +733,10 @@ impl<I> FallibleStreamingIterator for Skip<I>
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let hint = self.it.size_hint();
-        (hint.0.saturating_sub(self.n), hint.1.map(|h| h.saturating_sub(self.n)))
+        (
+            hint.0.saturating_sub(self.n),
+            hint.1.map(|h| h.saturating_sub(self.n)),
+        )
     }
 }
 
@@ -661,8 +748,9 @@ pub struct SkipWhile<I, F> {
 }
 
 impl<I, F> FallibleStreamingIterator for SkipWhile<I, F>
-    where I: FallibleStreamingIterator,
-          F: FnMut(&I::Item) -> bool
+where
+    I: FallibleStreamingIterator,
+    F: FnMut(&I::Item) -> bool,
 {
     type Item = I::Item;
     type Error = I::Error;
@@ -702,7 +790,8 @@ pub struct Take<I> {
 }
 
 impl<I> FallibleStreamingIterator for Take<I>
-    where I: FallibleStreamingIterator
+where
+    I: FallibleStreamingIterator,
 {
     type Item = I::Item;
     type Error = I::Error;
@@ -720,7 +809,11 @@ impl<I> FallibleStreamingIterator for Take<I>
 
     #[inline]
     fn get(&self) -> Option<&I::Item> {
-        if self.done { None } else { self.it.get() }
+        if self.done {
+            None
+        } else {
+            self.it.get()
+        }
     }
 
     #[inline]
@@ -729,7 +822,10 @@ impl<I> FallibleStreamingIterator for Take<I>
             (0, Some(0))
         } else {
             let hint = self.it.size_hint();
-            (hint.0.saturating_sub(self.n), hint.1.map(|h| h.saturating_sub(self.n)))
+            (
+                hint.0.saturating_sub(self.n),
+                hint.1.map(|h| h.saturating_sub(self.n)),
+            )
         }
     }
 }
@@ -742,8 +838,9 @@ pub struct TakeWhile<I, F> {
 }
 
 impl<I, F> FallibleStreamingIterator for TakeWhile<I, F>
-    where I: FallibleStreamingIterator,
-          F: FnMut(&I::Item) -> bool
+where
+    I: FallibleStreamingIterator,
+    F: FnMut(&I::Item) -> bool,
 {
     type Item = I::Item;
     type Error = I::Error;
@@ -760,7 +857,11 @@ impl<I, F> FallibleStreamingIterator for TakeWhile<I, F>
 
     #[inline]
     fn get(&self) -> Option<&I::Item> {
-        if self.done { None } else { self.it.get() }
+        if self.done {
+            None
+        } else {
+            self.it.get()
+        }
     }
 
     #[inline]
@@ -778,4 +879,5 @@ mod test {
     use super::*;
 
     fn _is_object_safe(_: &FallibleStreamingIterator<Item = (), Error = ()>) {}
+    fn _is_object_safe_double(_: &DoubleEndedFallibleStreamingIterator<Item = (), Error = ()>) {}
 }
