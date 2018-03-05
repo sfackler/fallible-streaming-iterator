@@ -139,6 +139,19 @@ pub trait FallibleStreamingIterator {
         Ok((*self).get())
     }
 
+    /// Calls a closure on each element of an iterator.
+    #[inline]
+    fn for_each<F>(mut self, mut f: F) -> Result<(), Self::Error>
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item),
+    {
+        while let Some(value) = self.next()? {
+            f(value);
+        }
+        Ok(())
+    }
+
     /// Returns an iterator which is well-behaved at the beginning and end of iteration.
     #[inline]
     fn fuse(self) -> Fuse<Self>
