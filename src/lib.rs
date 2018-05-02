@@ -19,6 +19,7 @@
 #[cfg(feature = "std")]
 extern crate core;
 
+use core::cmp;
 use core::marker::PhantomData;
 
 /// A fallible, streaming iterator.
@@ -832,15 +833,16 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        if self.done {
-            (0, Some(0))
-        } else {
-            let hint = self.it.size_hint();
-            (
-                hint.0.saturating_sub(self.n),
-                hint.1.map(|h| h.saturating_sub(self.n)),
-            )
-        }
+        let (lower, upper) = self.it.size_hint();
+
+        let lower = cmp::min(lower, self.n);
+
+        let upper = match upper {
+            Some(x) if x < self.n => Some(x),
+            _ => Some(self.n)
+        };
+
+        (lower, upper)
     }
 }
 
