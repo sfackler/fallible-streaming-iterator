@@ -179,6 +179,20 @@ pub trait FallibleStreamingIterator {
         }
     }
 
+    /// Returns an iterator which applies a fallible transform to elements.
+    #[inline]
+    fn try_map<F, B>(self, f: F) -> TryMap<Self, F, B>
+    where
+        Self: Sized,
+        F: FnMut(&Self::Item) -> Result<B, Self::Error>,
+    {
+        TryMap {
+            it: self,
+            f: f,
+            value: None,
+        }
+    }
+
     /// Returns an iterator which applies a transform to elements.
     ///
     /// Unlike `map`, the the closure provided to this method returns a reference into the original
@@ -620,6 +634,58 @@ where
     #[inline]
     fn advance_back(&mut self) -> Result<(), I::Error> {
         self.value = self.it.next_back()?.map(&mut self.f);
+        Ok(())
+    }
+}
+
+/// An iterator which applies a fallible transform to elements.
+pub struct TryMap<I, F, B> {
+    it: I,
+    f: F,
+    value: Option<B>,
+}
+
+impl<I, F, B> FallibleStreamingIterator for TryMap<I, F, B>
+where
+    I: FallibleStreamingIterator,
+    F: FnMut(&I::Item) -> Result<B, I::Error>,
+{
+    type Item = B;
+    type Error = I::Error;
+
+    #[inline]
+    fn advance(&mut self) -> Result<(), I::Error> {
+        if let Some(v) = self.it.next()? {
+            self.value = Some((self.f)(v)?);
+        } else {
+            self.value = None;
+        }
+        Ok(())
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&B> {
+        self.value.as_ref()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.it.size_hint()
+    }
+}
+
+impl<I, F, B> DoubleEndedFallibleStreamingIterator for TryMap<I, F, B>
+where
+    I: DoubleEndedFallibleStreamingIterator,
+    F: FnMut(&I::Item) -> Result<B, I::Error>,
+{
+    #[inline]
+    fn advance_back(&mut self) -> Result<(), I::Error> {
+        if let Some(v) = self.it.next_back()? {
+            self.value = Some((self.f)(v)?);
+        } else {
+            self.value = None;
+        }
         Ok(())
     }
 }
